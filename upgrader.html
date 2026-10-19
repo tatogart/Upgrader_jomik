@@ -78,8 +78,10 @@
     let targetId = null;
     let spinning = false;
     let rotation = 0;
+    let frozen = null; // ставка на время крутки: { stake, skin } — предмет уже списан из инвентаря
 
     function stakeValue() {
+      if (frozen) return frozen.stake;
       if (selectedUid !== null) {
         const it = inventoryItems().find(i => i.uid === selectedUid);
         return it ? it.skin.price : 0;
@@ -123,7 +125,8 @@
       const target = targetId && skinById(targetId);
       if (target && target.price <= stake) targetId = null;
 
-      const it = selectedUid !== null && inventoryItems().find(i => i.uid === selectedUid);
+      const it = frozen ? frozen.skin && { skin: frozen.skin }
+        : selectedUid !== null && inventoryItems().find(i => i.uid === selectedUid);
       $("slotFrom").innerHTML = it ? skinHTML(it.skin)
         : stake ? `<div><div style="font-size:34px">💰</div><b>${fmt(stake)} ₽</b><br>с баланса</div>`
         : "Выбери скин<br>или сумму";
@@ -187,10 +190,12 @@
         if (!it) return;
         Store.removeItem(it.uid);
         stakeLabel = `${it.skin.weapon} | ${it.skin.name}`;
+        frozen = { stake, skin: it.skin };
       } else {
         if (stake > Store.balance) { toast("Недостаточно средств", "lose"); return; }
         Store.take(stake);
         stakeLabel = fmt(stake) + " ₽";
+        frozen = { stake, skin: null };
       }
 
       spinning = true;
@@ -202,6 +207,7 @@
 
       setTimeout(() => {
         spinning = false;
+        frozen = null;
         selectedUid = null;
         $("betBalance").value = "";
         if (win) {
