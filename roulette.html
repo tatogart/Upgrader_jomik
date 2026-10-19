@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Рулетка — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>🎡 Рулетка</h1>
+    <p class="sub">15 секторов: 7 красных (×2), 7 чёрных (×2) и 1 зелёный (×14).</p>
+
+    <div class="strip-wrap" style="margin-bottom:18px"><div class="strip" id="strip"></div></div>
+
+    <section class="card">
+      <div class="row" style="margin-bottom:14px">
+        <div>
+          <label>Ставка (₽)</label>
+          <input class="input" id="bet" type="number" value="10" min="0">
+        </div>
+        <div class="chips" id="chips" style="align-self:flex-end"></div>
+      </div>
+      <div class="row">
+        <div class="bet-col"><button class="btn btn-big" style="background:#c0392b" data-c="red">Красное ×2</button></div>
+        <div class="bet-col"><button class="btn btn-big" style="background:#27ae60" data-c="green">Зелёное ×14</button></div>
+        <div class="bet-col"><button class="btn btn-big" style="background:#2b2f3a" data-c="black">Чёрное ×2</button></div>
+      </div>
+      <h2 style="margin-top:20px">Последние</h2>
+      <div class="history" id="history"></div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    bindBetChips($("bet"), $("chips"));
+
+    // Порядок секторов как на колесе
+    const WHEEL = [0, 11, 5, 10, 6, 9, 7, 8, 1, 14, 2, 13, 3, 12, 4];
+    const colorOf = n => n === 0 ? "green" : n <= 7 ? "red" : "black";
+    const PAYOUT = { red: 2, black: 2, green: 14 };
+    const CELL = 80; // 70 + gap 10
+    const REPEAT = 8;
+    let busy = false;
+    const hist = [];
+
+    function cells() {
+      let html = "";
+      for (let r = 0; r < REPEAT; r++)
+        for (const n of WHEEL) html += `<div class="rcell ${colorOf(n)}">${n}</div>`;
+      return html;
+    }
+
+    const strip = $("strip");
+    strip.innerHTML = cells();
+
+    function positionFor(index, jitter) {
+      const w = strip.parentElement.clientWidth;
+      return w / 2 - (index * CELL + 35) + jitter;
+    }
+
+    strip.style.transform = `translateX(${positionFor(WHEEL.length * 2, 0)}px)`;
+
+    document.querySelectorAll("[data-c]").forEach(btn => btn.addEventListener("click", () => {
+      if (busy) return;
+      const bet = readBet($("bet"));
+      if (!bet) return;
+      const choice = btn.dataset.c;
+      Store.take(bet);
+      busy = true;
+
+      const result = Math.floor(Math.random() * 15);
+      const idx = WHEEL.length * (REPEAT - 2) + WHEEL.indexOf(result);
+
+      strip.style.transition = "none";
+      strip.style.transform = `translateX(${positionFor(WHEEL.indexOf(result) + WHEEL.length, 0)}px)`;
+      void strip.offsetWidth;
+      strip.style.transition = "transform 5s cubic-bezier(.1,.75,.2,1)";
+      strip.style.transform = `translateX(${positionFor(idx, (Math.random() - 0.5) * 50)}px)`;
+
+      setTimeout(() => {
+        busy = false;
+        const color = colorOf(result);
+        hist.unshift(result);
+        $("history").innerHTML = hist.slice(0, 20)
+          .map(n => `<span class="rcell ${colorOf(n)}" style="flex:none;width:32px;height:32px;font-size:13px">${n}</span>`).join("");
+        if (color === choice) {
+          const win = round2(bet * PAYOUT[choice]);
+          Store.addBalance(win);
+          Store.log(`Рулетка: ${fmt(bet)} ₽ на ${choice}, выпало ${result} — +${fmt(win)} ₽`);
+          toast(`Выпало ${result}! +${fmt(win)} ₽`, "win");
+        } else {
+          Store.log(`Рулетка: ${fmt(bet)} ₽ на ${choice}, выпало ${result} — проигрыш`);
+          toast(`Выпало ${result}. Не повезло`, "lose");
+        }
+      }, 5200);
+    }));
+  </script>
+</body>
+</html>

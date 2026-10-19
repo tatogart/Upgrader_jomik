@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Апгрейдер — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>⬆️ Апгрейдер скинов</h1>
+    <p class="sub">Выбери свой скин (или сумму с баланса) и скин, который хочешь получить. Чем дороже цель — тем меньше шанс.</p>
+
+    <div class="grid grid-3">
+      <section class="card">
+        <h2>Твой предмет</h2>
+        <div class="row" style="margin-bottom:12px">
+          <div style="flex:1">
+            <label>…или поставить с баланса (₽)</label>
+            <input class="input" id="betBalance" type="number" min="0" step="1" placeholder="0" style="width:100%">
+          </div>
+        </div>
+        <div class="skins" id="myItems"></div>
+      </section>
+
+      <section class="card upg-center">
+        <div class="upg-slots">
+          <div class="slot" id="slotFrom">Выбери скин<br>или сумму</div>
+          <div style="font-size:26px">➜</div>
+          <div class="slot" id="slotTo">Выбери<br>цель</div>
+        </div>
+
+        <div class="wheel">
+          <svg viewBox="0 0 260 260">
+            <circle cx="130" cy="130" r="110" fill="none" stroke="#2b3040" stroke-width="18"/>
+            <circle id="arc" cx="130" cy="130" r="110" fill="none" stroke="#ff8a1f" stroke-width="18"
+                    stroke-dasharray="0 1000"/>
+          </svg>
+          <div class="pointer" id="pointer"></div>
+          <div class="label">
+            <div class="pct" id="chance">0%</div>
+            <div class="muted" id="mult">×0.00</div>
+          </div>
+        </div>
+
+        <div class="chips" id="quick">
+          <button class="btn btn-sm" data-m="1.5">×1.5</button>
+          <button class="btn btn-sm" data-m="2">×2</button>
+          <button class="btn btn-sm" data-m="3">×3</button>
+          <button class="btn btn-sm" data-m="5">×5</button>
+          <button class="btn btn-sm" data-m="10">×10</button>
+          <button class="btn btn-sm" data-m="20">×20</button>
+        </div>
+
+        <button class="btn btn-accent btn-big" id="go" disabled>Апгрейд</button>
+        <div class="muted center" style="font-size:13px">Скины выдуманные и не выводятся — только для фана.</div>
+      </section>
+
+      <section class="card">
+        <h2>Цель</h2>
+        <input class="input" id="search" placeholder="Поиск…" style="width:100%;margin-bottom:12px">
+        <div class="skins" id="targets"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const CIRC = 2 * Math.PI * 110;
+    let selectedUid = null;
+    let targetId = null;
+    let spinning = false;
+    let rotation = 0;
+
+    function stakeValue() {
+      if (selectedUid !== null) {
+        const it = inventoryItems().find(i => i.uid === selectedUid);
+        return it ? it.skin.price : 0;
+      }
+      const v = parseFloat($("betBalance").value);
+      return v > 0 ? round2(v) : 0;
+    }
+
+    function chance() {
+      const stake = stakeValue();
+      const target = targetId && skinById(targetId);
+      if (!stake || !target) return 0;
+      const s = Store.settings;
+      let c = stake / target.price * 100 * (1 - s.edge.upgrader / 100) + Number(s.upgraderBoost || 0);
+      return Math.max(0.01, Math.min(Number(s.maxUpgradeChance) || 90, c));
+    }
+
+    function renderMine() {
+      const items = inventoryItems();
+      $("myItems").innerHTML = items.length
+        ? items.map(i => skinHTML(i.skin, "", i.uid === selectedUid ? "selected" : "")
+            .replace('class="skin', `data-uid="${i.uid}" class="skin`)).join("")
+        : `<div class="empty">Инвентарь пуст.<br>Открой <a href="cases.html">кейс</a> или поставь баланс.</div>`;
+    }
+
+    function renderTargets() {
+      const q = $("search").value.trim().toLowerCase();
+      const stake = stakeValue();
+      const list = allSkins()
+        .filter(s => s.price > stake)
+        .filter(s => !q || (s.weapon + " " + s.name).toLowerCase().includes(q))
+        .sort((a, b) => a.price - b.price);
+      $("targets").innerHTML = list.length
+        ? list.map(s => skinHTML(s, "", s.id === targetId ? "selected" : "")
+            .replace('class="skin', `data-id="${s.id}" class="skin`)).join("")
+        : `<div class="empty">Нет подходящих скинов</div>`;
+    }
+
+    function renderCenter() {
+      const stake = stakeValue();
+      const target = targetId && skinById(targetId);
+      if (target && target.price <= stake) targetId = null;
+
+      const it = selectedUid !== null && inventoryItems().find(i => i.uid === selectedUid);
+      $("slotFrom").innerHTML = it ? skinHTML(it.skin)
+        : stake ? `<div><div style="font-size:34px">💰</div><b>${fmt(stake)} ₽</b><br>с баланса</div>`
+        : "Выбери скин<br>или сумму";
+      $("slotTo").innerHTML = targetId ? skinHTML(skinById(targetId)) : "Выбери<br>цель";
+
+      const c = chance();
+      $("chance").textContent = c.toFixed(2) + "%";
+      $("mult").textContent = "×" + (targetId && stake ? (skinById(targetId).price / stake).toFixed(2) : "0.00");
+      $("arc").setAttribute("stroke-dasharray", `${CIRC * c / 100} ${CIRC}`);
+      $("go").disabled = spinning || !c;
+    }
+
+    function renderAll() { renderMine(); renderTargets(); renderCenter(); }
+
+    $("myItems").addEventListener("click", e => {
+      const el = e.target.closest("[data-uid]");
+      if (!el || spinning) return;
+      const uid = Number(el.dataset.uid);
+      selectedUid = selectedUid === uid ? null : uid;
+      $("betBalance").value = "";
+      renderAll();
+    });
+
+    $("targets").addEventListener("click", e => {
+      const el = e.target.closest("[data-id]");
+      if (!el || spinning) return;
+      targetId = el.dataset.id;
+      renderAll();
+    });
+
+    $("betBalance").addEventListener("input", () => {
+      if (spinning) return;
+      selectedUid = null;
+      renderAll();
+    });
+
+    $("search").addEventListener("input", renderTargets);
+
+    $("quick").addEventListener("click", e => {
+      const m = Number(e.target.dataset.m);
+      const stake = stakeValue();
+      if (!m || spinning) return;
+      if (!stake) { toast("Сначала выбери свой скин или сумму", "lose"); return; }
+      const t = allSkins().filter(s => s.price >= stake * m).sort((a, b) => a.price - b.price)[0];
+      if (!t) { toast("Нет скина с таким множителем", "lose"); return; }
+      targetId = t.id;
+      renderAll();
+    });
+
+    $("go").addEventListener("click", () => {
+      const c = chance();
+      const stake = stakeValue();
+      const target = skinById(targetId);
+      if (!c || !target || spinning) return;
+
+      // Забираем ставку
+      let stakeLabel;
+      if (selectedUid !== null) {
+        const it = inventoryItems().find(i => i.uid === selectedUid);
+        if (!it) return;
+        Store.removeItem(it.uid);
+        stakeLabel = `${it.skin.weapon} | ${it.skin.name}`;
+      } else {
+        if (stake > Store.balance) { toast("Недостаточно средств", "lose"); return; }
+        Store.take(stake);
+        stakeLabel = fmt(stake) + " ₽";
+      }
+
+      spinning = true;
+      renderCenter();
+      const roll = Math.random() * 100;
+      const win = roll < c;
+      rotation = Math.ceil(rotation / 360) * 360 + 360 * 5 + roll * 3.6;
+      $("pointer").style.transform = `rotate(${rotation}deg)`;
+
+      setTimeout(() => {
+        spinning = false;
+        selectedUid = null;
+        $("betBalance").value = "";
+        if (win) {
+          Store.addSkin(target.id);
+          Store.log(`Апгрейдер: ${stakeLabel} → ${target.weapon} | ${target.name} (шанс ${c.toFixed(2)}%) — ПОБЕДА`);
+          modal(`<h2 style="color:var(--green)">Успех! 🎉</h2>${skinHTML(target, "", "big")}
+            <p class="muted">Скин добавлен в инвентарь. Напоминаем: вывести его нельзя — это фан-версия.</p>`);
+        } else {
+          Store.log(`Апгрейдер: ${stakeLabel} → ${target.weapon} | ${target.name} (шанс ${c.toFixed(2)}%) — проигрыш`);
+          toast(`Не повезло: выпало ${roll.toFixed(2)}, нужно было меньше ${c.toFixed(2)}`, "lose");
+        }
+        renderAll();
+      }, 4200);
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>

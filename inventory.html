@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Инвентарь — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>🎒 Инвентарь</h1>
+    <p class="sub">Скины можно продать за виртуальный баланс или улучшить в апгрейдере. <b>Вывод в Steam невозможен</b> — это фан-версия.</p>
+
+    <section class="card">
+      <div class="row" style="margin-bottom:14px">
+        <div><span id="count">0</span> предметов на <b id="total">0</b> ₽</div>
+        <div class="spacer"></div>
+        <button class="btn" id="withdrawAll">Вывести в Steam</button>
+        <button class="btn btn-accent" id="sellAll">Продать всё</button>
+      </div>
+      <div class="skins" id="items" style="max-height:none"></div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function render() {
+      const items = inventoryItems();
+      $("count").textContent = items.length;
+      $("total").textContent = fmt(items.reduce((s, i) => s + i.skin.price, 0));
+      $("items").innerHTML = items.length
+        ? items.map(i => skinHTML(i.skin, `<div class="actions">
+            <button class="btn btn-sm btn-accent" data-sell="${i.uid}">Продать</button>
+            <button class="btn btn-sm" data-withdraw>Вывод</button></div>`)).join("")
+        : `<div class="empty">Пусто. Открой <a href="cases.html">кейс</a> или выдай себе скин в <a href="admin.html">админке</a>.</div>`;
+    }
+
+    $("items").addEventListener("click", e => {
+      if (e.target.hasAttribute("data-withdraw")) { showWithdrawBlocked(); return; }
+      const uid = Number(e.target.dataset.sell);
+      if (!uid) return;
+      const it = inventoryItems().find(i => i.uid === uid);
+      if (!it) return;
+      Store.removeItem(uid);
+      Store.addBalance(it.skin.price);
+      Store.log(`Продажа: ${it.skin.weapon} | ${it.skin.name} за ${fmt(it.skin.price)} ₽`);
+      toast(`Продано за ${fmt(it.skin.price)} ₽`, "win");
+      render();
+    });
+
+    $("sellAll").addEventListener("click", () => {
+      const items = inventoryItems();
+      if (!items.length) return;
+      const sum = items.reduce((s, i) => s + i.skin.price, 0);
+      Store.state.inventory = [];
+      Store.addBalance(sum);
+      Store.log(`Продано всё (${items.length} шт.) за ${fmt(sum)} ₽`);
+      toast(`Продано ${items.length} предметов за ${fmt(sum)} ₽`, "win");
+      render();
+    });
+
+    $("withdrawAll").addEventListener("click", showWithdrawBlocked);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Краш — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>🚀 Краш</h1>
+    <p class="sub">Делай ставку и забирай выигрыш до того, как ракета взорвётся.</p>
+
+    <div class="grid grid-side">
+      <section class="card">
+        <label>Ставка (₽)</label>
+        <input class="input" id="bet" type="number" value="10" min="0" style="width:100%">
+        <div class="chips" id="chips" style="margin:8px 0 14px"></div>
+        <label>Автовывод на ×</label>
+        <input class="input" id="auto" type="number" value="2" min="1.01" step="0.01" style="width:100%">
+        <div class="muted" style="font-size:12px;margin:4px 0 16px">Оставь пустым, чтобы забирать вручную</div>
+        <button class="btn btn-accent btn-big" id="action" style="width:100%">Старт</button>
+        <h2 style="margin-top:22px">История</h2>
+        <div class="history" id="history"></div>
+      </section>
+
+      <section class="crash-box">
+        <canvas id="cv"></canvas>
+        <div class="crash-mult" id="mult">×1.00</div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    bindBetChips($("bet"), $("chips"));
+
+    const cv = $("cv");
+    const ctx = cv.getContext("2d");
+    const SPEED = 0.00011; // скорость роста множителя
+    let round = null;      // { bet, crashAt, start, auto, cashed }
+    const hist = [];
+
+    function multAt(ms) { return Math.exp(SPEED * ms); }
+
+    function genCrash() {
+      // Классическая формула с комиссией: P(crash >= x) = (1 - edge) / x
+      const edge = Store.settings.edge.crash / 100;
+      const u = Math.random();
+      return Math.max(1, Math.floor((1 - edge) / (1 - u) * 100) / 100);
+    }
+
+    function resize() {
+      cv.width = cv.clientWidth * devicePixelRatio;
+      cv.height = cv.clientHeight * devicePixelRatio;
+    }
+    addEventListener("resize", resize);
+    resize();
+
+    function draw(elapsed, m, color) {
+      const w = cv.width, h = cv.height, pad = 30 * devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+      const maxT = Math.max(8000, elapsed);
+      const maxM = Math.max(2, m);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4 * devicePixelRatio;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const t = elapsed * i / 100;
+        const x = pad + (w - 2 * pad) * t / maxT;
+        const y = h - pad - (h - 2 * pad) * (multAt(t) - 1) / (maxM - 1);
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function setButton() {
+      const b = $("action");
+      if (!round) { b.textContent = "Старт"; b.className = "btn btn-accent btn-big"; b.disabled = false; }
+      else if (!round.cashed) { b.textContent = "Забрать"; b.className = "btn btn-green btn-big"; b.disabled = false; }
+      else { b.textContent = "Ждём краш…"; b.disabled = true; }
+      b.style.width = "100%";
+    }
+
+    function cashout(m) {
+      if (!round || round.cashed) return;
+      round.cashed = m;
+      const win = round2(round.bet * m);
+      Store.addBalance(win);
+      Store.log(`Краш: ставка ${fmt(round.bet)} ₽, забрал на ×${m.toFixed(2)} → +${fmt(win)} ₽`);
+      toast(`Забрал ×${m.toFixed(2)}: +${fmt(win)} ₽`, "win");
+      $("mult").className = "crash-mult cashed";
+      setButton();
+    }
+
+    function tick() {
+      if (!round) return;
+      const elapsed = performance.now() - round.start;
+      const m = Math.floor(multAt(elapsed) * 100) / 100;
+
+      if (m >= round.crashAt) {
+        draw(elapsed, round.crashAt, "#e74c3c");
+        $("mult").textContent = "×" + round.crashAt.toFixed(2);
+        $("mult").className = "crash-mult crashed";
+        if (!round.cashed) {
+          Store.log(`Краш: ставка ${fmt(round.bet)} ₽, взрыв на ×${round.crashAt.toFixed(2)} — проигрыш`);
+          toast(`Взрыв на ×${round.crashAt.toFixed(2)}`, "lose");
+        }
+        hist.unshift(round.crashAt);
+        $("history").innerHTML = hist.slice(0, 15)
+          .map(x => `<span class="${x >= 2 ? "g" : "r"}">×${x.toFixed(2)}</span>`).join("");
+        round = null;
+        setButton();
+        return;
+      }
+
+      if (round.auto && !round.cashed && m >= round.auto) cashout(round.auto);
+      $("mult").textContent = "×" + m.toFixed(2);
+      draw(elapsed, m, round.cashed ? "#2ecc71" : "#ff8a1f");
+      requestAnimationFrame(tick);
+    }
+
+    $("action").addEventListener("click", () => {
+      if (round) {
+        const m = Math.floor(multAt(performance.now() - round.start) * 100) / 100;
+        if (m < round.crashAt) cashout(m);
+        return;
+      }
+      const bet = readBet($("bet"));
+      if (!bet) return;
+      const auto = parseFloat($("auto").value);
+      Store.take(bet);
+      round = { bet, crashAt: genCrash(), start: performance.now(), auto: auto > 1 ? auto : null, cashed: 0 };
+      $("mult").className = "crash-mult";
+      setButton();
+      requestAnimationFrame(tick);
+    });
+
+    draw(0, 1, "#ff8a1f");
+  </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Админка — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>🛠️ Админка</h1>
+    <p class="sub">Админка открыта всем. Все изменения действуют только в твоём браузере — у каждого игрока свой баланс и свои настройки.</p>
+
+    <div class="grid grid-2">
+      <section class="card">
+        <h2>💰 Баланс</h2>
+        <p class="muted" style="margin-top:0">Сейчас: <b id="curBalance"></b> ₽</p>
+        <div class="row">
+          <input class="input" id="balInput" type="number" value="1000" style="flex:1">
+          <button class="btn btn-accent" id="addBal">Добавить</button>
+          <button class="btn" id="setBal">Установить</button>
+        </div>
+        <div class="chips" style="margin-top:10px" id="balChips">
+          <button class="btn btn-sm" data-v="1000">+1 000</button>
+          <button class="btn btn-sm" data-v="10000">+10 000</button>
+          <button class="btn btn-sm" data-v="100000">+100 000</button>
+          <button class="btn btn-sm" data-v="1000000">+1 000 000</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>🎁 Выдать скин</h2>
+        <div class="row">
+          <select class="input" id="giveSelect" style="flex:1"></select>
+          <input class="input" id="giveCount" type="number" value="1" min="1" max="100" style="width:70px">
+          <button class="btn btn-accent" id="give">Выдать</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <span class="muted">В инвентаре: <b id="invCount"></b> шт.</span>
+          <div class="spacer"></div>
+          <button class="btn btn-red btn-sm" id="clearInv">Очистить инвентарь</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>🎲 Настройки игр</h2>
+        <div class="kv">
+          <span>Комиссия апгрейдера, %</span><input class="input" data-edge="upgrader" type="number" step="0.5">
+          <span>Комиссия кейсов, %</span><input class="input" data-edge="cases" type="number" step="0.5">
+          <span>Комиссия краша, %</span><input class="input" data-edge="crash" type="number" step="0.5">
+          <span>Комиссия монетки, %</span><input class="input" data-edge="coinflip" type="number" step="0.5">
+          <span>Комиссия мин, %</span><input class="input" data-edge="mines" type="number" step="0.5">
+          <span>Бонус к шансу апгрейда, п.п.</span><input class="input" id="boost" type="number" step="1">
+          <span>Макс. шанс апгрейда, %</span><input class="input" id="maxChance" type="number" step="1">
+          <span>Стартовый баланс, ₽</span><input class="input" id="startBal" type="number" step="100">
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-accent" id="saveSettings">Сохранить</button>
+          <button class="btn" id="defaults">По умолчанию</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>✨ Свой скин</h2>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Оружие</label><input class="input" id="csWeapon" placeholder="AK-47" style="width:100%"></div>
+          <div><label>Название</label><input class="input" id="csName" placeholder="Мой скин" style="width:100%"></div>
+          <div><label>Редкость</label><select class="input" id="csRarity" style="width:100%"></select></div>
+          <div><label>Тип</label><select class="input" id="csType" style="width:100%"></select></div>
+          <div><label>Цена, ₽</label><input class="input" id="csPrice" type="number" value="500" style="width:100%"></div>
+          <div style="align-self:end"><button class="btn btn-accent" id="csAdd" style="width:100%">Добавить скин</button></div>
+        </div>
+        <div class="skins" id="customList" style="margin-top:14px;max-height:240px"></div>
+      </section>
+
+      <section class="card">
+        <h2>📜 Журнал</h2>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="card admin-warn">
+        <h2>⚠️ Сброс</h2>
+        <p class="muted">Удаляет баланс, инвентарь, журнал и все настройки в этом браузере.</p>
+        <button class="btn btn-red" id="reset">Сбросить всё</button>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function render() {
+      const s = Store.settings;
+      $("curBalance").textContent = fmt(Store.balance);
+      $("invCount").textContent = Store.state.inventory.length;
+      $("giveSelect").innerHTML = allSkins().slice().sort((a, b) => a.price - b.price)
+        .map(k => `<option value="${esc(k.id)}">${esc(k.weapon)} | ${esc(k.name)} — ${fmt(k.price)} ₽</option>`).join("");
+      document.querySelectorAll("[data-edge]").forEach(i => i.value = s.edge[i.dataset.edge]);
+      $("boost").value = s.upgraderBoost;
+      $("maxChance").value = s.maxUpgradeChance;
+      $("startBal").value = s.startBalance;
+      $("customList").innerHTML = (s.customSkins || []).map(k =>
+        skinHTML(k, `<div class="actions"><button class="btn btn-sm btn-red" data-del="${esc(k.id)}">Удалить</button></div>`)).join("")
+        || `<div class="empty">Своих скинов пока нет</div>`;
+      $("log").innerHTML = Store.state.log.length
+        ? Store.state.log.map(l => `<div><span class="muted">${new Date(l.t).toLocaleTimeString("ru-RU")}</span> ${esc(l.text)}</div>`).join("")
+        : `<div class="muted">Пусто</div>`;
+    }
+
+    $("csRarity").innerHTML = Object.entries(RARITIES).map(([k, r]) => `<option value="${k}">${r.name}</option>`).join("");
+    $("csType").innerHTML = Object.entries(ICONS).map(([k, i]) => `<option value="${k}">${i} ${k}</option>`).join("");
+
+    $("addBal").addEventListener("click", () => {
+      const v = parseFloat($("balInput").value) || 0;
+      Store.addBalance(v);
+      toast(`Баланс изменён на ${fmt(v)} ₽`, "win");
+      render();
+    });
+    $("setBal").addEventListener("click", () => {
+      Store.setBalance(parseFloat($("balInput").value) || 0);
+      toast("Баланс установлен", "win");
+      render();
+    });
+    $("balChips").addEventListener("click", e => {
+      const v = Number(e.target.dataset.v);
+      if (!v) return;
+      Store.addBalance(v);
+      render();
+    });
+
+    $("give").addEventListener("click", () => {
+      const id = $("giveSelect").value;
+      const n = Math.max(1, Math.min(100, parseInt($("giveCount").value) || 1));
+      for (let i = 0; i < n; i++) Store.addSkin(id);
+      const k = skinById(id);
+      Store.log(`Админка: выдано ${n} × ${k.weapon} | ${k.name}`);
+      toast(`Выдано: ${k.weapon} | ${k.name} ×${n}`, "win");
+      render();
+    });
+    $("clearInv").addEventListener("click", () => {
+      if (!confirm("Очистить инвентарь?")) return;
+      Store.state.inventory = [];
+      Store.save();
+      render();
+    });
+
+    $("saveSettings").addEventListener("click", () => {
+      const s = Store.settings;
+      document.querySelectorAll("[data-edge]").forEach(i => {
+        s.edge[i.dataset.edge] = Math.max(-50, Math.min(90, parseFloat(i.value) || 0));
+      });
+      s.upgraderBoost = parseFloat($("boost").value) || 0;
+      s.maxUpgradeChance = Math.max(1, Math.min(100, parseFloat($("maxChance").value) || 90));
+      s.startBalance = Math.max(0, parseFloat($("startBal").value) || 0);
+      Store.saveSettings();
+      toast("Настройки сохранены", "win");
+      render();
+    });
+    $("defaults").addEventListener("click", () => {
+      Object.assign(Store.settings, {
+        startBalance: DEFAULT_SETTINGS.startBalance,
+        edge: { ...DEFAULT_SETTINGS.edge },
+        upgraderBoost: DEFAULT_SETTINGS.upgraderBoost,
+        maxUpgradeChance: DEFAULT_SETTINGS.maxUpgradeChance,
+      });
+      Store.saveSettings();
+      toast("Настройки сброшены по умолчанию");
+      render();
+    });
+
+    $("csAdd").addEventListener("click", () => {
+      const weapon = $("csWeapon").value.trim();
+      const name = $("csName").value.trim();
+      const price = round2(parseFloat($("csPrice").value));
+      if (!weapon || !name || !(price > 0)) { toast("Заполни оружие, название и цену", "lose"); return; }
+      Store.settings.customSkins.push({
+        id: "custom-" + Date.now(), weapon, name, price,
+        rarity: $("csRarity").value, type: $("csType").value,
+      });
+      Store.saveSettings();
+      toast("Скин добавлен — он доступен в апгрейдере и выдаче", "win");
+      render();
+    });
+    $("customList").addEventListener("click", e => {
+      const id = e.target.dataset.del;
+      if (!id) return;
+      Store.settings.customSkins = Store.settings.customSkins.filter(k => k.id !== id);
+      Store.saveSettings();
+      render();
+    });
+
+    $("reset").addEventListener("click", () => {
+      if (!confirm("Точно сбросить всё?")) return;
+      Store.resetAll();
+      toast("Всё сброшено");
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Кейсы — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>📦 Кейсы</h1>
+    <p class="sub">Открывай кейсы за виртуальный баланс. Выпавшие скины попадают в инвентарь (вывести их нельзя).</p>
+
+    <div class="games" id="caseList"></div>
+
+    <section class="card" id="opener" style="margin-top:24px;display:none">
+      <div class="row" style="margin-bottom:14px">
+        <h2 style="margin:0" id="caseTitle"></h2>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" id="openBtn"></button>
+      </div>
+      <div class="strip-wrap"><div class="strip" id="strip"></div></div>
+      <h2 style="margin-top:22px">Содержимое кейса</h2>
+      <div class="skins" id="contents" style="max-height:none"></div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const ITEM_W = 140; // ширина карточки + gap
+    const WIN_INDEX = 45;
+
+    const CASES = [
+      { id: "starter", name: "Стартовый", emoji: "🟢",
+        pool: ["sand-dune", "safari-mesh", "forest-ddpat", "urban-ddpat", "blue-laminate", "boreal", "elite-build", "guardian"] },
+      { id: "army", name: "Армейский", emoji: "🔵",
+        pool: ["urban-ddpat", "blue-laminate", "boreal", "elite-build", "guardian", "desert-storm", "water-elemental", "cyrex", "redline"] },
+      { id: "classified", name: "Засекреченный", emoji: "🟣",
+        pool: ["elite-build", "desert-storm", "water-elemental", "cyrex", "redline", "hyper-beast", "neo-noir", "asiimov", "vulcan"] },
+      { id: "covert", name: "Тайный", emoji: "🔴",
+        pool: ["redline", "hyper-beast", "neo-noir", "asiimov", "vulcan", "asiimov-awp", "fire-serpent", "driver-king", "m9-crimson"] },
+      { id: "knife", name: "Ножевой", emoji: "🔪",
+        pool: ["asiimov", "vulcan", "asiimov-awp", "driver-king", "m9-crimson", "karambit-doppler", "sport-vice", "butterfly-fade"] },
+      { id: "legend", name: "Легендарный", emoji: "🐉",
+        pool: ["vulcan", "asiimov-awp", "fire-serpent", "karambit-doppler", "howl", "butterfly-fade", "dragon-lore"] },
+    ];
+
+    // Шанс предмета обратно пропорционален цене, цена кейса = матожидание с учётом комиссии из админки
+    function caseInfo(c) {
+      const skins = c.pool.map(skinById).filter(Boolean);
+      const weights = skins.map(s => 1 / s.price);
+      const total = weights.reduce((a, b) => a + b, 0);
+      const ev = skins.length / total;
+      const price = round2(ev / (1 - Store.settings.edge.cases / 100));
+      return { skins, weights, total, price };
+    }
+
+    function pick(info) {
+      let r = Math.random() * info.total;
+      for (let i = 0; i < info.skins.length; i++) {
+        r -= info.weights[i];
+        if (r <= 0) return info.skins[i];
+      }
+      return info.skins[info.skins.length - 1];
+    }
+
+    let current = null;
+    let busy = false;
+
+    function renderList() {
+      $("caseList").innerHTML = CASES.map(c => {
+        const info = caseInfo(c);
+        return `<a class="game-card" href="#" data-case="${c.id}">
+          <div class="emoji">${c.emoji}</div>
+          <h3>${c.name}</h3>
+          <p>${info.skins.length} предметов · <b style="color:var(--accent2)">${fmt(info.price)} ₽</b></p>
+        </a>`;
+      }).join("");
+    }
+
+    function select(id) {
+      current = CASES.find(c => c.id === id);
+      const info = caseInfo(current);
+      $("opener").style.display = "";
+      $("caseTitle").textContent = `${current.emoji} Кейс «${current.name}»`;
+      $("openBtn").textContent = `Открыть за ${fmt(info.price)} ₽`;
+      $("contents").innerHTML = info.skins
+        .map((s, i) => skinHTML(s, `<div class="w">шанс ${(info.weights[i] / info.total * 100).toFixed(2)}%</div>`))
+        .join("");
+      fillStrip(info, null);
+      $("opener").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function fillStrip(info, winner) {
+      const items = [];
+      for (let i = 0; i < WIN_INDEX + 8; i++) items.push(i === WIN_INDEX && winner ? winner : pick(info));
+      const strip = $("strip");
+      strip.style.transition = "none";
+      strip.style.transform = "translateX(0)";
+      strip.innerHTML = items.map(s => skinHTML(s)).join("");
+      void strip.offsetWidth; // перезапуск анимации
+    }
+
+    $("caseList").addEventListener("click", e => {
+      const el = e.target.closest("[data-case]");
+      if (!el) return;
+      e.preventDefault();
+      if (!busy) select(el.dataset.case);
+    });
+
+    $("openBtn").addEventListener("click", () => {
+      if (busy || !current) return;
+      const info = caseInfo(current);
+      if (!Store.take(info.price)) { toast("Недостаточно средств. Пополни баланс в админке", "lose"); return; }
+
+      busy = true;
+      $("openBtn").disabled = true;
+      const winner = pick(info);
+      fillStrip(info, winner);
+
+      const strip = $("strip");
+      const wrapW = strip.parentElement.clientWidth;
+      const jitter = (Math.random() - 0.5) * 110;
+      const x = wrapW / 2 - (WIN_INDEX * ITEM_W + 65) + jitter;
+      strip.style.transition = "transform 6s cubic-bezier(.1,.75,.2,1)";
+      strip.style.transform = `translateX(${x}px)`;
+
+      setTimeout(() => {
+        busy = false;
+        $("openBtn").disabled = false;
+        Store.addSkin(winner.id);
+        Store.log(`Кейс «${current.name}» за ${fmt(info.price)} ₽ → ${winner.weapon} | ${winner.name} (${fmt(winner.price)} ₽)`);
+        modal(`<h2>Выпало!</h2>${skinHTML(winner, "", "big")}
+          <p class="muted">Скин в инвентаре. Его можно продать за виртуальный баланс или улучшить в апгрейдере.</p>`);
+      }, 6200);
+    });
+
+    renderList();
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мины — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>💎 Мины</h1>
+    <p class="sub">Открывай клетки: каждый алмаз увеличивает множитель. Попал на мину — ставка сгорает.</p>
+
+    <div class="grid grid-side">
+      <section class="card">
+        <label>Ставка (₽)</label>
+        <input class="input" id="bet" type="number" value="10" min="0" style="width:100%">
+        <div class="chips" id="chips" style="margin:8px 0 14px"></div>
+        <label>Количество мин</label>
+        <select class="input" id="count" style="width:100%;margin-bottom:16px"></select>
+        <div class="row" style="margin-bottom:14px">
+          <div>Множитель: <b id="mult">×1.00</b></div>
+          <div class="spacer"></div>
+          <div class="muted">След.: <span id="next">—</span></div>
+        </div>
+        <button class="btn btn-accent btn-big" id="action" style="width:100%">Начать</button>
+      </section>
+      <section class="card">
+        <div class="mines-grid" id="grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    bindBetChips($("bet"), $("chips"));
+    const N = 25;
+    for (let i = 1; i < N; i++) $("count").insertAdjacentHTML("beforeend", `<option ${i === 3 ? "selected" : ""}>${i}</option>`);
+
+    let game = null; // { bet, mines:Set, opened:Set, count }
+
+    function multFor(opened, count) {
+      let m = 1;
+      for (let i = 0; i < opened; i++) m *= (N - i) / (N - count - i);
+      return m * (1 - Store.settings.edge.mines / 100);
+    }
+
+    function renderGrid(reveal) {
+      let html = "";
+      for (let i = 0; i < N; i++) {
+        let cls = "", txt = "";
+        if (game && game.opened.has(i)) { cls = "gem"; txt = "💎"; }
+        else if (reveal && game && game.mines.has(i)) { cls = "bomb"; txt = "💣"; }
+        else if (reveal && game) { txt = "<span style='opacity:.35'>💎</span>"; }
+        html += `<button class="tile ${cls}" data-i="${i}" ${!game || reveal || game.opened.has(i) ? "disabled" : ""}>${txt}</button>`;
+      }
+      $("grid").innerHTML = html;
+    }
+
+    function renderInfo() {
+      if (!game) {
+        $("action").textContent = "Начать";
+        $("action").className = "btn btn-accent btn-big";
+        $("mult").textContent = "×1.00";
+        $("next").textContent = "—";
+      } else {
+        const k = game.opened.size;
+        const m = k ? multFor(k, game.count) : 1;
+        $("mult").textContent = "×" + m.toFixed(2);
+        $("next").textContent = k < N - game.count ? "×" + multFor(k + 1, game.count).toFixed(2) : "—";
+        $("action").textContent = k ? `Забрать ${fmt(game.bet * m)} ₽` : "Открой клетку";
+        $("action").className = "btn btn-green btn-big";
+        $("action").disabled = !k;
+      }
+      $("action").style.width = "100%";
+      $("count").disabled = !!game;
+    }
+
+    function finish(win) {
+      renderGrid(true);
+      const g = game;
+      game = null;
+      if (win) {
+        const m = multFor(g.opened.size, g.count);
+        const prize = round2(g.bet * m);
+        Store.addBalance(prize);
+        Store.log(`Мины (${g.count}): ставка ${fmt(g.bet)} ₽, забрал ×${m.toFixed(2)} → +${fmt(prize)} ₽`);
+        toast(`+${fmt(prize)} ₽`, "win");
+      } else {
+        Store.log(`Мины (${g.count}): ставка ${fmt(g.bet)} ₽ — подрыв`);
+        toast("Бум! Это была мина 💣", "lose");
+      }
+      renderInfo();
+      $("action").disabled = false;
+    }
+
+    $("action").addEventListener("click", () => {
+      if (game) { if (game.opened.size) finish(true); return; }
+      const bet = readBet($("bet"));
+      if (!bet) return;
+      Store.take(bet);
+      const count = Number($("count").value);
+      const mines = new Set();
+      while (mines.size < count) mines.add(Math.floor(Math.random() * N));
+      game = { bet, count, mines, opened: new Set() };
+      renderGrid(false);
+      renderInfo();
+    });
+
+    $("grid").addEventListener("click", e => {
+      const t = e.target.closest("[data-i]");
+      if (!t || !game || t.disabled) return;
+      const i = Number(t.dataset.i);
+      if (game.mines.has(i)) {
+        finish(false);
+        return;
+      }
+      game.opened.add(i);
+      if (game.opened.size === N - game.count) { finish(true); return; }
+      renderGrid(false);
+      renderInfo();
+    });
+
+    renderGrid(false);
+    renderInfo();
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Монетка — JOMIK.FUN</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>🪙 Монетка</h1>
+    <p class="sub">Выбери сторону — CT или T. Угадал — получаешь почти ×2.</p>
+
+    <section class="card" style="max-width:520px;margin:0 auto">
+      <div class="coin3d" id="coin">
+        <div class="face ct">CT</div>
+        <div class="face t">T</div>
+      </div>
+      <div class="row" style="justify-content:center;margin-bottom:14px">
+        <button class="btn side-btn active" data-side="ct" style="background:#2a4f8f">CT</button>
+        <button class="btn side-btn" data-side="t" style="background:#8f6a2a">T</button>
+      </div>
+      <label>Ставка (₽)</label>
+      <input class="input" id="bet" type="number" value="10" min="0" style="width:100%">
+      <div class="chips" id="chips" style="margin:8px 0 14px"></div>
+      <button class="btn btn-accent btn-big" id="flip" style="width:100%"></button>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    bindBetChips($("bet"), $("chips"));
+    const payout = () => round2(2 * (1 - Store.settings.edge.coinflip / 100));
+    $("flip").textContent = `Подбросить (×${payout()})`;
+
+    let side = "ct";
+    let busy = false;
+    let turns = 0;
+
+    document.querySelectorAll("[data-side]").forEach(b => b.addEventListener("click", () => {
+      side = b.dataset.side;
+      document.querySelectorAll("[data-side]").forEach(x => x.classList.toggle("active", x === b));
+    }));
+
+    $("flip").addEventListener("click", () => {
+      if (busy) return;
+      const bet = readBet($("bet"));
+      if (!bet) return;
+      Store.take(bet);
+      busy = true;
+
+      const result = Math.random() < 0.5 ? "ct" : "t";
+      // Каждый раз крутим вперёд на целое число оборотов и останавливаемся на нужной стороне
+      turns += 6;
+      const deg = turns * 360 + (result === "t" ? 180 : 0);
+      const coin = $("coin");
+      coin.style.transition = "transform 2s cubic-bezier(.2,.8,.3,1)";
+      coin.style.transform = `rotateY(${deg}deg)`;
+
+      setTimeout(() => {
+        busy = false;
+        if (result === side) {
+          const win = round2(bet * payout());
+          Store.addBalance(win);
+          Store.log(`Монетка: ${fmt(bet)} ₽ на ${side.toUpperCase()} — победа, +${fmt(win)} ₽`);
+          toast(`${result.toUpperCase()}! +${fmt(win)} ₽`, "win");
+        } else {
+          Store.log(`Монетка: ${fmt(bet)} ₽ на ${side.toUpperCase()} — проигрыш`);
+          toast(`Выпало ${result.toUpperCase()}. Мимо`, "lose");
+        }
+      }, 2100);
+    });
+  </script>
+</body>
+</html>
