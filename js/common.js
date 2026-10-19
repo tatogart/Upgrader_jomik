@@ -100,6 +100,13 @@ const DEFAULT_SETTINGS = {
   upgraderBoost: 0,     // добавка к шансу апгрейда в процентных пунктах
   maxUpgradeChance: 90, // максимальный шанс апгрейда
   customSkins: [],
+  // Подкрутка: "fair" — честно, "win" — всегда выигрыш, "lose" — всегда проигрыш
+  rig: { upgrader: "fair", cases: "fair", crash: "fair", roulette: "fair", coinflip: "fair", mines: "fair" },
+  crashForce: 0, // если > 0 — краш всегда на этом множителе
+};
+
+const RIG_GAMES = {
+  upgrader: "Апгрейдер", cases: "Кейсы", crash: "Краш", roulette: "Рулетка", coinflip: "Монетка", mines: "Мины",
 };
 
 const LS_KEY = "jomik_state_v1";
@@ -124,7 +131,8 @@ const Store = {
 
   init() {
     const s = loadJSON(LS_SETTINGS, {});
-    this.settings = { ...DEFAULT_SETTINGS, ...s, edge: { ...DEFAULT_SETTINGS.edge, ...(s.edge || {}) } };
+    this.settings = { ...DEFAULT_SETTINGS, ...s, edge: { ...DEFAULT_SETTINGS.edge, ...(s.edge || {}) },
+      rig: { ...DEFAULT_SETTINGS.rig, ...(s.rig || {}) } };
     this.state = loadJSON(LS_KEY, null) || this.freshState();
   },
 
@@ -183,6 +191,15 @@ const Store = {
     this.save();
   },
 };
+
+function rigMode(game) {
+  const m = Store.settings.rig[game];
+  return m === "win" || m === "lose" ? m : "fair";
+}
+
+function isRigged() {
+  return Object.keys(RIG_GAMES).some(g => rigMode(g) !== "fair") || Store.settings.crashForce > 0;
+}
 
 function allSkins() {
   return BASE_SKINS.concat(Store.settings.customSkins || []);
@@ -253,6 +270,7 @@ function renderLayout() {
     <div class="disclaimer">
       ⚠️ <b>Это только фановая версия.</b> Скины и баланс виртуальные —
       <b>вывести их нельзя</b>, пополнить реальными деньгами тоже нельзя. Просто для развлечения.
+      ${isRigged() ? `<br>🎛️ <b>Включена подкрутка шансов</b> — настроить можно в <a href="admin.html">админке</a>.` : ""}
     </div>
     <div class="live">
       <div class="live-label"><span class="dot"></span>LIVE</div>

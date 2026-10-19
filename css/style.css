@@ -596,6 +596,20 @@ label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: 
 .log { max-height: 320px; overflow-y: auto; font-size: 13px; }
 .log div { padding: 7px 0; border-bottom: 1px solid var(--border); }
 
+.rig-card { grid-column: 1 / -1; border-color: rgba(139, 92, 246, .35); background: linear-gradient(180deg, rgba(139, 92, 246, .08), transparent 50%), var(--card); }
+.rig-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px 28px; }
+.rig-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rig-row > span { font-weight: 700; }
+.seg { display: inline-flex; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 3px; }
+.seg button {
+  border: none; background: transparent; color: var(--muted);
+  padding: 6px 12px; border-radius: 7px; font-weight: 800; font-size: 13px; cursor: pointer;
+}
+.seg button:hover { color: var(--text); }
+.seg button.on.fair { background: var(--card3); color: var(--text); }
+.seg button.on.win { background: var(--green); color: #04210f; }
+.seg button.on.lose { background: var(--red); color: #fff; }
+
 /* ---------- mobile ---------- */
 @media (max-width: 1400px) {
   .nav a { padding: 8px 9px; }

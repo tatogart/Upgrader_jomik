@@ -113,6 +113,19 @@
       const t = e.target.closest("[data-i]");
       if (!t || !game || t.disabled) return;
       const i = Number(t.dataset.i);
+      // Подкрутка: переносим мину из клетки или в клетку, по которой кликнули
+      const mode = rigMode("mines");
+      if (mode === "lose" && !game.mines.has(i)) {
+        game.mines.delete(game.mines.values().next().value);
+        game.mines.add(i);
+      } else if (mode === "win" && game.mines.has(i)) {
+        const free = [];
+        for (let k = 0; k < N; k++) if (k !== i && !game.mines.has(k) && !game.opened.has(k)) free.push(k);
+        if (free.length) {
+          game.mines.delete(i);
+          game.mines.add(free[Math.floor(Math.random() * free.length)]);
+        }
+      }
       if (game.mines.has(i)) {
         finish(false);
         return;

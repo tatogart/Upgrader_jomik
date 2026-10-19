@@ -48,6 +48,10 @@
     function genCrash() {
       // Классическая формула с комиссией: P(crash >= x) = (1 - edge) / x
       const edge = Store.settings.edge.crash / 100;
+      const mode = rigMode("crash");
+      if (Store.settings.crashForce > 1) return Math.round(Store.settings.crashForce * 100) / 100;
+      if (mode === "win") return 1000;
+      if (mode === "lose") return 1;
       const u = Math.random();
       return Math.max(1, Math.floor((1 - edge) / (1 - u) * 100) / 100);
     }

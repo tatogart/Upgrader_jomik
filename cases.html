@@ -63,6 +63,19 @@
       return info.skins[info.skins.length - 1];
     }
 
+    // Подкрутка: «выигрыш» — только предметы дороже кейса, «проигрыш» — дешевле
+    function rigPick(info) {
+      const mode = rigMode("cases");
+      if (mode === "fair") return pick(info);
+      const idx = info.skins.map((s, i) => i).filter(i => (info.skins[i].price > info.price) === (mode === "win"));
+      if (!idx.length) return pick(info);
+      return pick({
+        skins: idx.map(i => info.skins[i]),
+        weights: idx.map(i => info.weights[i]),
+        total: idx.reduce((a, i) => a + info.weights[i], 0),
+      });
+    }
+
     let current = null;
     let busy = false;
 
@@ -114,7 +127,7 @@
 
       busy = true;
       $("openBtn").disabled = true;
-      const winner = pick(info);
+      const winner = rigPick(info);
       fillStrip(info, winner);
 
       const strip = $("strip");

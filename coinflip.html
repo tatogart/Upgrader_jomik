@@ -51,7 +51,9 @@
       Store.take(bet);
       busy = true;
 
-      const result = Math.random() < 0.5 ? "ct" : "t";
+      const mode = rigMode("coinflip");
+      const other = side === "ct" ? "t" : "ct";
+      const result = mode === "win" ? side : mode === "lose" ? other : Math.random() < 0.5 ? "ct" : "t";
       // Каждый раз крутим вперёд на целое число оборотов и останавливаемся на нужной стороне
       turns += 6;
       const deg = turns * 360 + (result === "t" ? 180 : 0);

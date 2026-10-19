@@ -201,7 +201,11 @@
 
       spinning = true;
       renderCenter();
-      const roll = Math.random() * 100;
+      // Подкрутка из админки: выбираем точку остановки внутри или вне зоны шанса
+      const mode = rigMode("upgrader");
+      const roll = mode === "win" ? Math.random() * c
+        : mode === "lose" ? c + Math.random() * (100 - c)
+        : Math.random() * 100;
       const win = roll < c;
       rotation = Math.ceil(rotation / 360) * 360 + 360 * 5 + roll * 3.6;
       $("pointer").style.transform = `rotate(${rotation}deg)`;

@@ -71,7 +71,9 @@
       Store.take(bet);
       busy = true;
 
-      const result = Math.floor(Math.random() * 15);
+      const mode = rigMode("roulette");
+      const pool = WHEEL.filter(n => mode === "fair" || (colorOf(n) === choice) === (mode === "win"));
+      const result = pool[Math.floor(Math.random() * pool.length)];
       const idx = WHEEL.length * (REPEAT - 2) + WHEEL.indexOf(result);
 
       strip.style.transition = "none";

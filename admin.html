@@ -60,6 +60,22 @@
         </div>
       </section>
 
+      <section class="card rig-card">
+        <h2>🎛️ Подкрутка шансов</h2>
+        <p class="muted" style="margin-top:0">Подкрутка поверх обычных шансов: можно всегда выигрывать или всегда проигрывать.
+          Пока она включена, на всех страницах висит предупреждение.</p>
+        <div class="chips" style="margin-bottom:14px">
+          <button class="btn btn-sm btn-green" data-rig-all="win">Всё на выигрыш</button>
+          <button class="btn btn-sm" data-rig-all="fair">Всё честно</button>
+          <button class="btn btn-sm btn-red" data-rig-all="lose">Всё на проигрыш</button>
+        </div>
+        <div id="rigList" class="rig-list"></div>
+        <div class="kv" style="margin-top:14px">
+          <span>Краш всегда на × <span class="muted">(0 — выкл.)</span></span>
+          <input class="input" id="crashForce" type="number" min="0" step="0.01">
+        </div>
+      </section>
+
       <section class="card">
         <h2>✨ Свой скин</h2>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
@@ -95,7 +111,43 @@
   <script>
     const $ = id => document.getElementById(id);
 
+    const RIG_MODES = [["fair", "Честно"], ["win", "Выигрыш"], ["lose", "Проигрыш"]];
+
+    function renderRig() {
+      $("rigList").innerHTML = Object.entries(RIG_GAMES).map(([g, name]) => `
+        <div class="rig-row"><span>${name}</span>
+          <div class="seg">${RIG_MODES.map(([m, label]) =>
+            `<button class="${rigMode(g) === m ? "on " + m : ""}" data-rig="${g}" data-mode="${m}">${label}</button>`).join("")}</div>
+        </div>`).join("");
+      $("crashForce").value = Store.settings.crashForce || 0;
+    }
+
+    function setRig(game, mode) {
+      Store.settings.rig[game] = mode;
+      Store.saveSettings();
+      renderRig();
+    }
+
+    $("rigList").addEventListener("click", e => {
+      const b = e.target.closest("[data-rig]");
+      if (b) setRig(b.dataset.rig, b.dataset.mode);
+    });
+    document.querySelectorAll("[data-rig-all]").forEach(b => b.addEventListener("click", () => {
+      Object.keys(RIG_GAMES).forEach(g => Store.settings.rig[g] = b.dataset.rigAll);
+      if (b.dataset.rigAll === "fair") Store.settings.crashForce = 0;
+      Store.saveSettings();
+      renderRig();
+      toast(b.textContent, b.dataset.rigAll === "lose" ? "lose" : "win");
+    }));
+    $("crashForce").addEventListener("change", () => {
+      const v = parseFloat($("crashForce").value) || 0;
+      Store.settings.crashForce = v > 1 ? Math.round(v * 100) / 100 : 0;
+      Store.saveSettings();
+      renderRig();
+    });
+
     function render() {
+      renderRig();
       const s = Store.settings;
       $("curBalance").textContent = fmt(Store.balance);
       $("invCount").textContent = Store.state.inventory.length;
@@ -184,6 +236,8 @@
         edge: { ...DEFAULT_SETTINGS.edge },
         upgraderBoost: DEFAULT_SETTINGS.upgraderBoost,
         maxUpgradeChance: DEFAULT_SETTINGS.maxUpgradeChance,
+        rig: { ...DEFAULT_SETTINGS.rig },
+        crashForce: 0,
       });
       Store.saveSettings();
       toast("Настройки сброшены по умолчанию");
