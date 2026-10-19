@@ -8,46 +8,73 @@
 </head>
 <body>
   <main class="container">
-    <h1>Добро пожаловать на JOMIK.FUN 🎮</h1>
-    <p class="sub">Фановый апгрейдер скинов и мини-игры. Баланс и скины виртуальные — их нельзя вывести или купить за реальные деньги.</p>
+    <section class="hero">
+      <div class="art">🔫</div>
+      <h1>Апгрейдь скины <span>без риска</span></h1>
+      <p>Фановый апгрейдер и мини-игры в стиле CS. Баланс и скины виртуальные — их нельзя вывести
+        или купить за реальные деньги. Просто крути и развлекайся.</p>
+      <div class="row">
+        <a class="btn btn-accent btn-big" href="upgrader.html">Начать апгрейд</a>
+        <a class="btn btn-big" href="cases.html">Открыть кейс</a>
+      </div>
+    </section>
 
-    <div class="games">
-      <a class="game-card" href="upgrader.html">
+    <div class="stats">
+      <div class="stat"><div class="k">Баланс</div><div class="v" id="sBalance"></div></div>
+      <div class="stat"><div class="k">Скинов в инвентаре</div><div class="v" id="sItems"></div></div>
+      <div class="stat"><div class="k">Стоимость инвентаря</div><div class="v" id="sValue"></div></div>
+      <div class="stat"><div class="k">Сыграно игр</div><div class="v" id="sGames"></div></div>
+    </div>
+
+    <h2 class="section-title">🎮 Игры</h2>
+    <div class="games" style="margin-bottom:32px">
+      <a class="game-card" href="upgrader.html" style="--gc:#ff7a1a">
+        <span class="tag">ХИТ</span>
         <div class="emoji">⬆️</div>
         <h3>Апгрейдер</h3>
         <p>Поставь скин и попробуй улучшить его до более дорогого. Сам выбираешь шанс.</p>
       </a>
-      <a class="game-card" href="cases.html">
+      <a class="game-card" href="cases.html" style="--gc:#8b5cf6">
+        <span class="tag">6 КЕЙСОВ</span>
         <div class="emoji">📦</div>
         <h3>Кейсы</h3>
         <p>Открывай кейсы и выбивай скины от ширпотреба до ножей.</p>
       </a>
-      <a class="game-card" href="crash.html">
+      <a class="game-card" href="crash.html" style="--gc:#ff3d6e">
+        
         <div class="emoji">🚀</div>
         <h3>Краш</h3>
         <p>Множитель растёт — успей забрать, пока ракета не взорвалась.</p>
       </a>
-      <a class="game-card" href="roulette.html">
+      <a class="game-card" href="roulette.html" style="--gc:#22d47b">
+        
         <div class="emoji">🎡</div>
         <h3>Рулетка</h3>
         <p>Красное ×2, чёрное ×2, зелёное ×14.</p>
       </a>
-      <a class="game-card" href="coinflip.html">
+      <a class="game-card" href="coinflip.html" style="--gc:#ffc53d">
+        
         <div class="emoji">🪙</div>
         <h3>Монетка</h3>
         <p>CT или T — 50 на 50.</p>
       </a>
-      <a class="game-card" href="mines.html">
+      <a class="game-card" href="mines.html" style="--gc:#3d8bfd">
+        
         <div class="emoji">💎</div>
         <h3>Мины</h3>
         <p>Открывай клетки с алмазами и не наткнись на мину.</p>
       </a>
-      <a class="game-card" href="inventory.html">
+    </div>
+
+    <h2 class="section-title">⚙️ Ещё</h2>
+    <div class="games">
+      <a class="game-card" href="inventory.html" style="--gc:#22d47b">
         <div class="emoji">🎒</div>
         <h3>Инвентарь</h3>
         <p>Твои скины. Можно продать за виртуальный баланс.</p>
       </a>
-      <a class="game-card" href="admin.html">
+      <a class="game-card" href="admin.html" style="--gc:#8c93ab">
+        <span class="tag">ДЛЯ ВСЕХ</span>
         <div class="emoji">🛠️</div>
         <h3>Админка</h3>
         <p>Открыта всем: меняй баланс, выдавай скины, настраивай шансы.</p>
@@ -55,5 +82,12 @@
     </div>
   </main>
   <script src="js/common.js"></script>
+  <script>
+    const items = inventoryItems();
+    document.getElementById("sBalance").textContent = fmt(Store.balance) + " ₽";
+    document.getElementById("sItems").textContent = items.length;
+    document.getElementById("sValue").textContent = fmt(items.reduce((s, i) => s + i.skin.price, 0)) + " ₽";
+    document.getElementById("sGames").textContent = Store.state.log.length;
+  </script>
 </body>
 </html>

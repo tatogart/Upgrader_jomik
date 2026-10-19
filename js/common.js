@@ -108,6 +108,7 @@ const Store = {
     const item = { uid: this.state.nextUid++, skinId };
     this.state.inventory.unshift(item);
     this.save();
+    if (typeof pushLiveDrop === "function") pushLiveDrop(skinById(skinId), "Ты", true);
     return item;
   },
 
@@ -168,41 +169,83 @@ function skinHTML(skin, extra = "", cls = "") {
 // ---------- UI ----------
 
 const PAGES = [
-  ["index.html", "Главная"],
-  ["upgrader.html", "Апгрейдер"],
-  ["cases.html", "Кейсы"],
-  ["crash.html", "Краш"],
-  ["roulette.html", "Рулетка"],
-  ["coinflip.html", "Монетка"],
-  ["mines.html", "Мины"],
-  ["inventory.html", "Инвентарь"],
-  ["admin.html", "Админка"],
+  ["index.html", "Главная", "🏠"],
+  ["upgrader.html", "Апгрейдер", "⬆️"],
+  ["cases.html", "Кейсы", "📦"],
+  ["crash.html", "Краш", "🚀"],
+  ["roulette.html", "Рулетка", "🎡"],
+  ["coinflip.html", "Монетка", "🪙"],
+  ["mines.html", "Мины", "💎"],
+  ["inventory.html", "Инвентарь", "🎒"],
+  ["admin.html", "Админка", "🛠️"],
 ];
+
+const BOT_NAMES = ["s1mple_fan", "kotik228", "AWPer", "jomik", "noob_master", "headshot", "zxc_ghoul",
+  "ricardo", "pro100vasya", "luckyboy", "sniper_kz", "clutch_king", "dimon", "ez_win", "flick"];
 
 function renderLayout() {
   const current = location.pathname.split("/").pop() || "index.html";
-  const nav = PAGES.map(([href, title]) =>
-    `<a href="${href}" class="${href === current ? "active" : ""}">${title}</a>`).join("");
+  const nav = PAGES.map(([href, title, icon]) =>
+    `<a href="${href}" class="${href === current ? "active" : ""}"><span class="ni">${icon}</span>${title}</a>`).join("");
 
   document.body.insertAdjacentHTML("afterbegin", `
     <header class="header">
-      <a class="logo" href="index.html">JOMIK<span>.FUN</span></a>
+      <a class="logo" href="index.html"><span class="logo-mark">J</span><span class="logo-text">JOMIK<span>.FUN</span></span></a>
       <nav class="nav">${nav}</nav>
-      <div class="balance"><span class="coin">●</span><span id="balance"></span> ₽</div>
+      <div class="balance">
+        <span class="coin">₽</span><span id="balance"></span>
+        <a class="plus" href="admin.html" title="Пополнить в админке">+</a>
+      </div>
     </header>
     <div class="disclaimer">
       ⚠️ <b>Это только фановая версия.</b> Скины и баланс виртуальные —
       <b>вывести их нельзя</b>, пополнить реальными деньгами тоже нельзя. Просто для развлечения.
+    </div>
+    <div class="live">
+      <div class="live-label"><span class="dot"></span>LIVE</div>
+      <div class="live-track" id="liveTrack"></div>
     </div>`);
 
   document.body.insertAdjacentHTML("beforeend", `
     <footer class="footer">
-      JOMIK.FUN — фан-проект без реальных денег. Все предметы ненастоящие и не выводятся.
-      Прогресс хранится только в этом браузере.
+      <div class="logo" style="justify-content:center"><span class="logo-mark">J</span><span class="logo-text">JOMIK<span>.FUN</span></span></div>
+      <p>Фан-проект без реальных денег. Все предметы ненастоящие и не выводятся.
+      Прогресс хранится только в этом браузере.</p>
     </footer>
     <div class="toasts" id="toasts"></div>`);
 
   renderBalance();
+  initLiveFeed();
+}
+
+// Лента выпадений: случайные «игроки» + твои настоящие дропы
+function liveItemHTML(skin, who, mine) {
+  const r = RARITIES[skin.rarity] || RARITIES.consumer;
+  return `<div class="live-item ${mine ? "mine" : ""}" style="--rc:${r.color}" title="${esc(skin.weapon)} | ${esc(skin.name)}">
+    <div class="ico">${ICONS[skin.type] || "🎁"}</div>
+    <div class="li-text"><div class="w">${esc(who)}</div><div class="n">${esc(skin.name)}</div></div>
+  </div>`;
+}
+
+function pushLiveDrop(skin, who, mine) {
+  const track = document.getElementById("liveTrack");
+  if (!track || !skin) return;
+  track.insertAdjacentHTML("afterbegin", liveItemHTML(skin, who, mine));
+  while (track.children.length > 24) track.lastElementChild.remove();
+}
+
+function randomDrop() {
+  const skins = allSkins();
+  const weights = skins.map(s => 1 / Math.sqrt(s.price));
+  let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < skins.length; i++) { r -= weights[i]; if (r <= 0) return skins[i]; }
+  return skins[0];
+}
+
+function initLiveFeed() {
+  for (let i = 0; i < 16; i++) pushLiveDrop(randomDrop(), BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)]);
+  setInterval(() => pushLiveDrop(randomDrop(), BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)]),
+    2500 + Math.random() * 2000);
 }
 
 function renderBalance() {

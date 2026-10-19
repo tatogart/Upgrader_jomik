@@ -32,9 +32,15 @@
 
         <div class="wheel">
           <svg viewBox="0 0 260 260">
-            <circle cx="130" cy="130" r="110" fill="none" stroke="#2b3040" stroke-width="18"/>
-            <circle id="arc" cx="130" cy="130" r="110" fill="none" stroke="#ff8a1f" stroke-width="18"
-                    stroke-dasharray="0 1000"/>
+            <defs>
+              <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ffa43b"/>
+                <stop offset="100%" stop-color="#ff3d6e"/>
+              </linearGradient>
+            </defs>
+            <circle cx="130" cy="130" r="110" fill="none" stroke="#232839" stroke-width="18"/>
+            <circle id="arc" cx="130" cy="130" r="110" fill="none" stroke="url(#arcGrad)" stroke-width="18"
+                    stroke-linecap="round" stroke-dasharray="0 1000" style="transition:stroke-dasharray .3s"/>
           </svg>
           <div class="pointer" id="pointer"></div>
           <div class="label">
@@ -127,6 +133,7 @@
       $("chance").textContent = c.toFixed(2) + "%";
       $("mult").textContent = "×" + (targetId && stake ? (skinById(targetId).price / stake).toFixed(2) : "0.00");
       $("arc").setAttribute("stroke-dasharray", `${CIRC * c / 100} ${CIRC}`);
+      $("arc").style.opacity = c ? 1 : 0;
       $("go").disabled = spinning || !c;
     }
 
