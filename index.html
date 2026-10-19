@@ -9,7 +9,7 @@
 <body>
   <main class="container">
     <section class="hero">
-      <div class="art">🔫</div>
+      <div class="art" id="heroArt"></div>
       <h1>Апгрейдь скины <span>без риска</span></h1>
       <p>Фановый апгрейдер и мини-игры в стиле CS. Баланс и скины виртуальные — их нельзя вывести
         или купить за реальные деньги. Просто крути и развлекайся.</p>
@@ -35,7 +35,7 @@
         <p>Поставь скин и попробуй улучшить его до более дорогого. Сам выбираешь шанс.</p>
       </a>
       <a class="game-card" href="cases.html" style="--gc:#8b5cf6">
-        <span class="tag">6 КЕЙСОВ</span>
+        <span class="tag">8 КЕЙСОВ</span>
         <div class="emoji">📦</div>
         <h3>Кейсы</h3>
         <p>Открывай кейсы и выбивай скины от ширпотреба до ножей.</p>
@@ -81,8 +81,10 @@
       </a>
     </div>
   </main>
+  <script src="js/icons.js"></script>
   <script src="js/common.js"></script>
   <script>
+    document.getElementById("heroArt").innerHTML = skinIcon(skinById("dragon-lore"));
     const items = inventoryItems();
     document.getElementById("sBalance").textContent = fmt(Store.balance) + " ₽";
     document.getElementById("sItems").textContent = items.length;

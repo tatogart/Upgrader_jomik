@@ -67,6 +67,10 @@
           <div><label>Название</label><input class="input" id="csName" placeholder="Мой скин" style="width:100%"></div>
           <div><label>Редкость</label><select class="input" id="csRarity" style="width:100%"></select></div>
           <div><label>Тип</label><select class="input" id="csType" style="width:100%"></select></div>
+          <div><label>Цвет 1</label><input class="input" id="csC1" type="color" value="#ff7a1a" style="width:100%;height:42px;padding:4px"></div>
+          <div><label>Цвет 2</label><input class="input" id="csC2" type="color" value="#2a0a52" style="width:100%;height:42px;padding:4px"></div>
+          <div><label>Узор</label><select class="input" id="csPattern" style="width:100%"></select></div>
+          <div><label>Превью</label><div id="csPreview" style="height:42px;display:flex;align-items:center"></div></div>
           <div><label>Цена, ₽</label><input class="input" id="csPrice" type="number" value="500" style="width:100%"></div>
           <div style="align-self:end"><button class="btn btn-accent" id="csAdd" style="width:100%">Добавить скин</button></div>
         </div>
@@ -86,6 +90,7 @@
     </div>
   </main>
 
+  <script src="js/icons.js"></script>
   <script src="js/common.js"></script>
   <script>
     const $ = id => document.getElementById(id);
@@ -109,7 +114,23 @@
     }
 
     $("csRarity").innerHTML = Object.entries(RARITIES).map(([k, r]) => `<option value="${k}">${r.name}</option>`).join("");
-    $("csType").innerHTML = Object.entries(ICONS).map(([k, i]) => `<option value="${k}">${i} ${k}</option>`).join("");
+    $("csType").innerHTML = Object.entries(WEAPON_TYPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
+    $("csPattern").innerHTML = Object.entries(PATTERNS).map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
+
+    function draftSkin() {
+      return {
+        id: "preview", weapon: $("csWeapon").value.trim(), name: $("csName").value.trim(),
+        price: round2(parseFloat($("csPrice").value)), rarity: $("csRarity").value, type: $("csType").value,
+        c1: $("csC1").value, c2: $("csC2").value, pattern: $("csPattern").value,
+      };
+    }
+    function renderPreview() {
+      const k = draftSkin();
+      $("csPreview").style.setProperty("--rc", RARITIES[k.rarity].color);
+      $("csPreview").innerHTML = skinIcon(k);
+    }
+    ["csRarity", "csType", "csC1", "csC2", "csPattern"].forEach(id => $(id).addEventListener("input", renderPreview));
+    renderPreview();
 
     $("addBal").addEventListener("click", () => {
       const v = parseFloat($("balInput").value) || 0;
@@ -174,10 +195,7 @@
       const name = $("csName").value.trim();
       const price = round2(parseFloat($("csPrice").value));
       if (!weapon || !name || !(price > 0)) { toast("Заполни оружие, название и цену", "lose"); return; }
-      Store.settings.customSkins.push({
-        id: "custom-" + Date.now(), weapon, name, price,
-        rarity: $("csRarity").value, type: $("csType").value,
-      });
+      Store.settings.customSkins.push({ ...draftSkin(), id: "custom-" + Date.now(), weapon, name, price });
       Store.saveSettings();
       toast("Скин добавлен — он доступен в апгрейдере и выдаче", "win");
       render();

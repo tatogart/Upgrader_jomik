@@ -25,30 +25,28 @@
     </section>
   </main>
 
+  <script src="js/icons.js"></script>
   <script src="js/common.js"></script>
   <script>
     const $ = id => document.getElementById(id);
     const ITEM_W = 140; // ширина карточки + gap
     const WIN_INDEX = 45;
 
+    const KNIVES = ["knife", "karambit", "gloves"];
     const CASES = [
-      { id: "starter", name: "Стартовый", emoji: "🟢",
-        pool: ["sand-dune", "safari-mesh", "forest-ddpat", "urban-ddpat", "blue-laminate", "boreal", "elite-build", "guardian"] },
-      { id: "army", name: "Армейский", emoji: "🔵",
-        pool: ["urban-ddpat", "blue-laminate", "boreal", "elite-build", "guardian", "desert-storm", "water-elemental", "cyrex", "redline"] },
-      { id: "classified", name: "Засекреченный", emoji: "🟣",
-        pool: ["elite-build", "desert-storm", "water-elemental", "cyrex", "redline", "hyper-beast", "neo-noir", "asiimov", "vulcan"] },
-      { id: "covert", name: "Тайный", emoji: "🔴",
-        pool: ["redline", "hyper-beast", "neo-noir", "asiimov", "vulcan", "asiimov-awp", "fire-serpent", "driver-king", "m9-crimson"] },
-      { id: "knife", name: "Ножевой", emoji: "🔪",
-        pool: ["asiimov", "vulcan", "asiimov-awp", "driver-king", "m9-crimson", "karambit-doppler", "sport-vice", "butterfly-fade"] },
-      { id: "legend", name: "Легендарный", emoji: "🐉",
-        pool: ["vulcan", "asiimov-awp", "fire-serpent", "karambit-doppler", "howl", "butterfly-fade", "dragon-lore"] },
+      { id: "starter", name: "Стартовый", emoji: "🟢", filter: s => s.price <= 50 },
+      { id: "army", name: "Армейский", emoji: "🔵", filter: s => s.price >= 9 && s.price <= 220 },
+      { id: "pistol", name: "Пистолетный", emoji: "🔫", filter: s => ["pistol", "deagle"].includes(s.type) && s.price <= 2500 },
+      { id: "sniper", name: "Снайперский", emoji: "🔭", filter: s => s.type === "sniper" },
+      { id: "classified", name: "Засекреченный", emoji: "🟣", filter: s => s.price >= 35 && s.price <= 1500 },
+      { id: "covert", name: "Тайный", emoji: "🔴", filter: s => s.price >= 150 && s.price <= 7000 },
+      { id: "knife", name: "Ножевой", emoji: "🔪", filter: s => KNIVES.includes(s.type) || (s.price >= 600 && s.price <= 4500) },
+      { id: "legend", name: "Легендарный", emoji: "🐉", filter: s => s.price >= 1400 },
     ];
 
     // Шанс предмета обратно пропорционален цене, цена кейса = матожидание с учётом комиссии из админки
     function caseInfo(c) {
-      const skins = c.pool.map(skinById).filter(Boolean);
+      const skins = allSkins().filter(c.filter).sort((a, b) => a.price - b.price);
       const weights = skins.map(s => 1 / s.price);
       const total = weights.reduce((a, b) => a + b, 0);
       const ev = skins.length / total;

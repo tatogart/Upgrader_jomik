@@ -22,6 +22,7 @@
     </section>
   </main>
 
+  <script src="js/icons.js"></script>
   <script src="js/common.js"></script>
   <script>
     const $ = id => document.getElementById(id);
@@ -33,7 +34,7 @@
       $("items").innerHTML = items.length
         ? items.map(i => skinHTML(i.skin, `<div class="actions">
             <button class="btn btn-sm btn-accent" data-sell="${i.uid}">Продать</button>
-            <button class="btn btn-sm" data-withdraw>Вывод</button></div>`)).join("")
+            <button class="btn btn-sm" data-withdraw title="Вывод недоступен">🚫</button></div>`)).join("")
         : `<div class="empty">Пусто. Открой <a href="cases.html">кейс</a> или выдай себе скин в <a href="admin.html">админке</a>.</div>`;
     }
 

@@ -11,35 +11,88 @@ const RARITIES = {
   gold:       { name: "Редкий предмет",  color: "#e4ae39" },
 };
 
-const ICONS = { knife: "🔪", gloves: "🧤", pistol: "🔫", rifle: "🎯", sniper: "🔭", smg: "💥", heavy: "💣" };
-
+// id, оружие, название, редкость, цена, тип силуэта, цвет 1, цвет 2, узор
 const BASE_SKINS = [
-  ["sand-dune", "P250", "Песчаная дюна", "consumer", 3, "pistol"],
-  ["safari-mesh", "MP9", "Сафари", "consumer", 4, "smg"],
-  ["forest-ddpat", "Nova", "Лесной DDPAT", "consumer", 5, "heavy"],
-  ["urban-ddpat", "MAC-10", "Городской DDPAT", "industrial", 9, "smg"],
-  ["blue-laminate", "Glock-18", "Синий ламинат", "industrial", 14, "pistol"],
-  ["boreal", "SSG 08", "Бореальный лес", "industrial", 18, "sniper"],
-  ["elite-build", "AK-47", "Элитное снаряжение", "milspec", 35, "rifle"],
-  ["guardian", "USP-S", "Страж", "milspec", 48, "pistol"],
-  ["desert-storm", "M4A4", "Пустынная буря", "milspec", 60, "rifle"],
-  ["water-elemental", "Glock-18", "Водная стихия", "restricted", 120, "pistol"],
-  ["cyrex", "M4A1-S", "Сайрекс", "restricted", 160, "rifle"],
-  ["redline", "AK-47", "Красная линия", "restricted", 210, "rifle"],
-  ["hyper-beast", "AWP", "Скоростной зверь", "classified", 420, "sniper"],
-  ["neo-noir", "USP-S", "Неонуар", "classified", 520, "pistol"],
-  ["asiimov", "M4A4", "Азимов", "classified", 780, "rifle"],
-  ["vulcan", "AK-47", "Вулкан", "covert", 1450, "rifle"],
-  ["asiimov-awp", "AWP", "Азимов", "covert", 1900, "sniper"],
-  ["fire-serpent", "AK-47", "Огненный змей", "covert", 4200, "rifle"],
-  ["howl", "M4A4", "Вой", "covert", 9500, "rifle"],
-  ["dragon-lore", "AWP", "Драконья легенда", "covert", 18000, "sniper"],
-  ["karambit-doppler", "Керамбит", "Доплер", "gold", 7800, "knife"],
-  ["butterfly-fade", "Нож-бабочка", "Градиент", "gold", 12500, "knife"],
-  ["m9-crimson", "M9 Bayonet", "Кровавая паутина", "gold", 6400, "knife"],
-  ["sport-vice", "Спортивные перчатки", "Порок", "gold", 9900, "gloves"],
-  ["driver-king", "Водительские перчатки", "Король змей", "gold", 3100, "gloves"],
-].map(([id, weapon, name, rarity, price, type]) => ({ id, weapon, name, rarity, price, type }));
+  // Ширпотреб
+  ["sand-dune", "P250", "Песчаная дюна", "consumer", 3, "pistol", "#c9ad7c", "#7a6444", "solid"],
+  ["safari-mesh", "MP9", "Сафари", "consumer", 4, "smg", "#a3a374", "#55553a", "camo"],
+  ["forest-ddpat", "Nova", "Лесной DDPAT", "consumer", 5, "shotgun", "#58784a", "#26361e", "camo"],
+  ["boreal-ump", "UMP-45", "Хвойный лес", "consumer", 3.5, "smg", "#46684a", "#1c2c1e", "camo"],
+  ["groundwater-tec", "Tec-9", "Грунтовые воды", "consumer", 4, "pistol", "#679090", "#2b4242", "stripes"],
+  ["sage-spray", "G3SG1", "Полынь", "consumer", 6, "sniper", "#97a684", "#4e5742", "dots"],
+  ["contractor-m249", "M249", "Подрядчик", "consumer", 5, "heavy", "#857a66", "#40392f", "solid"],
+  ["night-ops-p2000", "P2000", "Ночные операции", "consumer", 3, "pistol", "#4a5060", "#1a1d24", "solid"],
+  ["storm-mag7", "MAG-7", "Буря", "consumer", 4, "shotgun", "#7b8c9c", "#36414c", "stripes"],
+  // Промышленное
+  ["urban-ddpat", "MAC-10", "Городской DDPAT", "industrial", 9, "smg", "#9aa0aa", "#454852", "camo"],
+  ["blue-laminate", "Glock-18", "Синий ламинат", "industrial", 14, "pistol", "#4a7ef0", "#1a3378", "stripes"],
+  ["boreal", "SSG 08", "Бореальный лес", "industrial", 18, "sniper", "#567a56", "#243424", "camo"],
+  ["tornado-famas", "FAMAS", "Торнадо", "industrial", 11, "rifle", "#9ab2c4", "#465662", "stripes"],
+  ["bright-water-m4", "M4A1-S", "Чистая вода", "industrial", 22, "rifle", "#3fb4e0", "#15506e", "fade"],
+  ["amber-fade-p2000", "P2000", "Янтарный градиент", "industrial", 16, "pistol", "#ffc23a", "#a3400c", "fade"],
+  ["copper-galaxy", "Galil AR", "Медная галактика", "industrial", 12, "rifle", "#c98040", "#4e2a12", "dots"],
+  ["nuclear-xm", "XM1014", "Ядерные отходы", "industrial", 10, "shotgun", "#a8e04a", "#2f4c0c", "hex"],
+  // Армейское
+  ["elite-build", "AK-47", "Элитное снаряжение", "milspec", 35, "rifle", "#4a80f0", "#dfe3ea", "stripes"],
+  ["guardian", "USP-S", "Страж", "milspec", 48, "pistol", "#3f62e6", "#c8d0de", "solid"],
+  ["desert-storm", "M4A4", "Пустынная буря", "milspec", 60, "rifle", "#d6ae6a", "#62492a", "camo"],
+  ["dragon-tattoo-glock", "Glock-18", "Татуировка дракона", "milspec", 40, "pistol", "#e24a24", "#3e0e0e", "dots"],
+  ["trigon-p90", "P90", "Тригон", "milspec", 32, "smg", "#eceef2", "#c83434", "stripes"],
+  ["pulse-mp7", "MP7", "Импульс", "milspec", 38, "smg", "#2ed8ff", "#0e3448", "stripes"],
+  ["seasons-xm", "XM1014", "Времена года", "milspec", 45, "shotgun", "#e0852f", "#356a2e", "fade"],
+  ["neon-ride-mac", "MAC-10", "Неоновая поездка", "milspec", 55, "smg", "#ff3db8", "#4014ff", "fade"],
+  ["crimson-web-deagle", "Desert Eagle", "Кровавая паутина", "milspec", 75, "deagle", "#c21c1c", "#2a0606", "hex"],
+  // Запрещённое
+  ["water-elemental", "Glock-18", "Водная стихия", "restricted", 120, "pistol", "#2fbcf0", "#e0402e", "fade"],
+  ["cyrex", "M4A1-S", "Сайрекс", "restricted", 160, "rifle", "#eef0f4", "#d42222", "stripes"],
+  ["redline", "AK-47", "Красная линия", "restricted", 210, "rifle", "#262626", "#d61c1c", "stripes"],
+  ["kill-confirmed", "USP-S", "Подтверждённое убийство", "restricted", 290, "pistol", "#2c2c2c", "#e8aa34", "stripes"],
+  ["blaze", "Desert Eagle", "Пламя", "restricted", 340, "deagle", "#ffbe2a", "#e01e10", "fade"],
+  ["starlight-mp9", "MP9", "Звёздный свет", "restricted", 140, "smg", "#8a66ff", "#160e4a", "dots"],
+  ["frontside-misty", "AK-47", "Туманный фронт", "restricted", 180, "rifle", "#74bcea", "#26283a", "fade"],
+  ["the-traitor", "USP-S", "Предатель", "restricted", 150, "pistol", "#ecca44", "#2c2c2c", "solid"],
+  ["fever-dream", "SSG 08", "Лихорадка", "restricted", 115, "sniper", "#ff60d4", "#2aa8ff", "fade"],
+  ["atheris", "AWP", "Атерис", "restricted", 130, "sniper", "#80dca8", "#163626", "hex"],
+  // Засекреченное
+  ["hyper-beast", "AWP", "Скоростной зверь", "classified", 420, "sniper", "#40dc74", "#b23ed8", "fade"],
+  ["neo-noir", "USP-S", "Неонуар", "classified", 520, "pistol", "#ff4646", "#262626", "stripes"],
+  ["asiimov", "M4A4", "Азимов", "classified", 780, "rifle", "#f4f4f4", "#ff6e1c", "solid"],
+  ["printstream-deagle", "Desert Eagle", "Принтстрим", "classified", 690, "deagle", "#f6f6f6", "#161616", "stripes"],
+  ["neon-revolution", "AK-47", "Неоновая революция", "classified", 610, "rifle", "#2effa0", "#ff2ea0", "fade"],
+  ["bloodsport", "AK-47", "Кровавый спорт", "classified", 880, "rifle", "#e42424", "#161616", "hex"],
+  ["nightmare-m4", "M4A1-S", "Кошмар", "classified", 450, "rifle", "#7442c0", "#0e0e0e", "dots"],
+  ["code-red-deagle", "Desert Eagle", "Код красный", "classified", 980, "deagle", "#d82424", "#f2f2f2", "stripes"],
+  ["mortis", "AWP", "Мортис", "classified", 480, "sniper", "#a4a4dc", "#262646", "camo"],
+  ["negev-power", "Negev", "Сила", "classified", 400, "heavy", "#ff9020", "#161616", "stripes"],
+  ["sawed-off-kiss", "Sawed-Off", "Поцелуй любви", "classified", 430, "shotgun", "#ff5a8a", "#3a0a1e", "dots"],
+  // Тайное
+  ["fade-glock", "Glock-18", "Градиент", "covert", 2100, "pistol", "#ffd640", "#c636ff", "fade"],
+  ["vulcan", "AK-47", "Вулкан", "covert", 1450, "rifle", "#2e90e0", "#f2f2f2", "stripes"],
+  ["printstream-m4", "M4A1-S", "Принтстрим", "covert", 1600, "rifle", "#f6f6f6", "#161616", "stripes"],
+  ["asiimov-awp", "AWP", "Азимов", "covert", 1900, "sniper", "#f4f4f4", "#ff6e1c", "solid"],
+  ["fire-serpent", "AK-47", "Огненный змей", "covert", 4200, "rifle", "#3e823e", "#d8a824", "hex"],
+  ["howl", "M4A4", "Вой", "covert", 9500, "rifle", "#e83412", "#f4a824", "fade"],
+  ["wild-lotus", "AK-47", "Дикий лотос", "covert", 11000, "rifle", "#2c7050", "#e6d6a6", "dots"],
+  ["medusa", "AWP", "Медуза", "covert", 13000, "sniper", "#40aa78", "#c8a856", "hex"],
+  ["gungnir", "AWP", "Гунгнир", "covert", 14500, "sniper", "#2e60b8", "#e8c858", "stripes"],
+  ["dragon-lore", "AWP", "Драконья легенда", "covert", 18000, "sniper", "#e8c878", "#3c923c", "hex"],
+  // Ножи и перчатки
+  ["hand-wraps", "Обмотки рук", "Скиталец", "gold", 2600, "gloves", "#ac8456", "#3a2a1a", "camo"],
+  ["driver-king", "Водительские перчатки", "Король змей", "gold", 3100, "gloves", "#45682e", "#c8c864", "hex"],
+  ["bayonet-tiger", "Штык-нож", "Зуб тигра", "gold", 4200, "knife", "#ffaa22", "#a83c10", "stripes"],
+  ["moto-pois", "Мотоперчатки", "Пои", "gold", 4900, "gloves", "#ff8020", "#262626", "stripes"],
+  ["talon-slaughter", "Коготь", "Убийство", "gold", 5600, "karambit", "#e64464", "#f4a8a8", "dots"],
+  ["m9-crimson", "M9 Bayonet", "Кровавая паутина", "gold", 6400, "knife", "#c21c1c", "#2a0606", "hex"],
+  ["specialist-crimson", "Перчатки специалиста", "Багровое кимоно", "gold", 7200, "gloves", "#d82424", "#260808", "hex"],
+  ["karambit-doppler", "Керамбит", "Доплер", "gold", 7800, "karambit", "#c840ff", "#2a0a52", "fade"],
+  ["skeleton-case", "Скелетный нож", "Закалка", "gold", 8800, "knife", "#3e70d8", "#d8a844", "fade"],
+  ["sport-vice", "Спортивные перчатки", "Порок", "gold", 9900, "gloves", "#ff4ed6", "#2ed8ff", "fade"],
+  ["butterfly-fade", "Нож-бабочка", "Градиент", "gold", 12500, "knife", "#ffd640", "#c636ff", "fade"],
+  ["karambit-lore", "Керамбит", "Легенда", "gold", 15000, "karambit", "#e8c878", "#3c923c", "hex"],
+  ["karambit-gamma", "Керамбит", "Гамма-доплер", "gold", 21000, "karambit", "#30ff80", "#0a3a2a", "fade"],
+  ["karambit-ruby", "Керамбит", "Рубин", "gold", 28000, "karambit", "#ff2444", "#560010", "fade"],
+  ["butterfly-sapphire", "Нож-бабочка", "Сапфир", "gold", 32000, "knife", "#2e60ff", "#0a1a6a", "fade"],
+].map(([id, weapon, name, rarity, price, type, c1, c2, pattern]) => ({ id, weapon, name, rarity, price, type, c1, c2, pattern }));
 
 const DEFAULT_SETTINGS = {
   startBalance: 1000,
@@ -158,7 +211,7 @@ function esc(s) {
 function skinHTML(skin, extra = "", cls = "") {
   const r = RARITIES[skin.rarity] || RARITIES.consumer;
   return `<div class="skin ${cls}" style="--rc:${r.color}" title="${esc(skin.weapon)} | ${esc(skin.name)} — ${esc(r.name)}">
-    <div class="ico">${ICONS[skin.type] || "🎁"}</div>
+    <div class="ico">${skinIcon(skin)}</div>
     <div class="w">${esc(skin.weapon)}</div>
     <div class="n">${esc(skin.name)}</div>
     <div class="p">${fmt(skin.price)} ₽</div>
@@ -222,7 +275,7 @@ function renderLayout() {
 function liveItemHTML(skin, who, mine) {
   const r = RARITIES[skin.rarity] || RARITIES.consumer;
   return `<div class="live-item ${mine ? "mine" : ""}" style="--rc:${r.color}" title="${esc(skin.weapon)} | ${esc(skin.name)}">
-    <div class="ico">${ICONS[skin.type] || "🎁"}</div>
+    <div class="ico">${skinIcon(skin)}</div>
     <div class="li-text"><div class="w">${esc(who)}</div><div class="n">${esc(skin.name)}</div></div>
   </div>`;
 }

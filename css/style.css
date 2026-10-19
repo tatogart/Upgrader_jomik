@@ -196,7 +196,8 @@ button, input, select { font: inherit; color: inherit; }
   animation: liveIn .4s ease-out;
 }
 .live-item.mine { box-shadow: inset 0 0 0 1px var(--accent); }
-.live-item .ico { font-size: 22px; }
+.live-item .ico { flex: 0 0 48px; height: 26px; display: flex; }
+.live-item .wicon { transform: rotate(-8deg); }
 .live-item .li-text { min-width: 0; }
 .live-item .w { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .live-item.mine .w { color: var(--accent2); font-weight: 800; }
@@ -282,10 +283,11 @@ label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: 
 .hero h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p { color: #c4c9da; max-width: 560px; line-height: 1.6; margin: 0 0 24px; }
 .hero .art {
+  --rc: #eb4b4b;
   position: absolute;
-  right: 40px; top: 50%;
+  right: 30px; top: 50%;
+  width: 380px;
   transform: translateY(-50%) rotate(-12deg);
-  font-size: 150px;
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, .5));
   animation: float 5s ease-in-out infinite;
 }
@@ -374,14 +376,24 @@ label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: 
 }
 .skin:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--rc, #888) 50%, transparent); }
 .skin.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 8px 24px rgba(255, 122, 26, .25); }
-.skin .ico { font-size: 36px; text-align: center; height: 54px; line-height: 54px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.skin .ico { height: 58px; display: flex; align-items: center; justify-content: center; }
+.wicon {
+  width: 100%;
+  max-width: 128px;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .55)) drop-shadow(0 0 10px color-mix(in srgb, var(--rc, #888) 45%, transparent));
+  transform: rotate(-6deg);
+  transition: transform .25s;
+}
+.skin:hover .wicon { transform: rotate(-10deg) scale(1.08); }
 .skin .w { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .skin .n { font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skin .p { font-size: 13px; color: var(--accent2); font-weight: 800; margin-top: 4px; }
 .skin .actions { margin-top: 8px; display: flex; gap: 4px; }
 .skin .actions .btn { flex: 1; }
 .skin.big { width: 180px; padding: 16px; cursor: default; }
-.skin.big .ico { font-size: 56px; height: 80px; line-height: 80px; }
+.skin.big .ico { height: 84px; }
 
 .empty { color: var(--muted); text-align: center; padding: 34px 10px; grid-column: 1 / -1; }
 
@@ -611,3 +623,6 @@ label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: 
   .live-label { padding: 0 10px; }
   .kv { grid-template-columns: 1fr 100px; }
 }
+
+.hero .art .wicon { max-width: none; transform: none; filter: drop-shadow(0 0 24px color-mix(in srgb, var(--rc) 55%, transparent)); }
+.skin .actions .btn { padding: 6px 4px; min-width: 0; }
